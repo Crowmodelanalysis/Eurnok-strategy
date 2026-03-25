@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EURNOK Regime Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111318;
+    --surface2: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #c8a96e;
+    --accent2: #7eb8d4;
+    --bull: #3d8f6e;
+    --bull-light: #6fc49a;
+    --bear: #9f4040;
+    --bear-light: #d97070;
+    --neutral: #5a6070;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--border2);
+    padding: 20px 40px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left h1 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .header-left .subtitle {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .contact-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+
+  .contact-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .contact-link:hover { color: var(--accent); }
+
+  .contact-link svg {
+    width: 13px; height: 13px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
+  .divider-v {
+    width: 1px;
+    height: 32px;
+    background: var(--border2);
+  }
+
+  .header-meta {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 0;
+    height: calc(100vh - 75px);
+  }
+
+  .left-panel {
+    padding: 24px 32px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .sliders-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .slider-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .slider-block label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slider-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border2);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+  }
+
+  .slider-val {
+    font-size: 16px;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+    color: var(--accent);
+  }
+
+  .signal-card {
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 22px;
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    transition: background 0.3s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signal-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    transition: background 0.3s;
+  }
+
+  .signal-card.bull::before { background: var(--bull-light); }
+  .signal-card.bear::before { background: var(--bear-light); }
+  .signal-card.neutral::before { background: var(--neutral); }
+
+  .sig-pct {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1;
+    min-width: 105px;
+    transition: color 0.3s;
+  }
+  .sig-pct.bull { color: var(--bull-light); }
+  .sig-pct.bear { color: var(--bear-light); }
+  .sig-pct.neutral { color: var(--muted); }
+
+  .sig-info .sig-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+  .sig-info .sig-title.bull { color: var(--bull-light); }
+  .sig-info .sig-title.bear { color: var(--bear-light); }
+  .sig-info .sig-title.neutral { color: var(--muted); }
+
+  .sig-info .sig-sub { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  .sig-bar-wrap {
+    margin-top: 8px;
+    height: 4px;
+    background: var(--border2);
+    border-radius: 4px;
+    width: 160px;
+  }
+
+  .sig-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s, background 0.3s;
+  }
+
+  .heatmap-section { margin-bottom: 0; }
+
+  table.hmap { border-collapse: collapse; width: 100%; }
+
+  table.hmap th {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 4px 6px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  table.hmap td.rh {
+    font-size: 10px;
+    color: var(--muted);
+    padding: 4px 10px 4px 0;
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+
+  table.hmap td.cell {
+    padding: 5px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: border-color 0.1s;
+    min-width: 44px;
+  }
+
+  table.hmap td.cell:hover { border-color: rgba(255,255,255,0.3); }
+  table.hmap td.cell.active { border-color: var(--accent) !important; border-width: 2px; }
+
+  .axis-x-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .hmap-container { display: flex; gap: 8px; align-items: flex-start; }
+
+  .y-axis-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .leg-item { display: flex; align-items: center; gap: 5px; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .insight-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .insight-header .section-label { margin-bottom: 0; }
+
+  .insight-body { flex: 1; overflow-y: auto; padding: 18px 24px; }
+
+  .mechanism-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+  }
+
+  .mechanism-block h3 {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 7px;
+  }
+
+  .mechanism-block p {
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1.7;
+  }
+
+  .regime-insight {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 13px 15px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1.7;
+    display: none;
+  }
+
+  .regime-insight.visible { display: block; }
+  .regime-insight strong { color: var(--text); font-weight: 500; }
+
+  .chat-section {
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    max-height: 340px;
+  }
+
+  .chat-label {
+    padding: 11px 20px;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 80px;
+  }
+
+  .msg { font-size: 12px; line-height: 1.65; max-width: 100%; }
+  .msg.user { color: var(--accent); text-align: right; font-style: italic; }
+  .msg.assistant { color: #b0b8c8; border-left: 2px solid var(--border2); padding-left: 10px; }
+  .msg.thinking { color: var(--muted); font-size: 11px; }
+
+  .chat-input-row { display: flex; gap: 0; border-top: 1px solid var(--border); }
+
+  .chat-input-row input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 11px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .chat-input-row input::placeholder { color: var(--muted); }
+
+  .chat-input-row button {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border);
+    padding: 11px 16px;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .chat-input-row button:hover { background: var(--surface); }
+  .chat-input-row button:disabled { color: var(--muted); cursor: not-allowed; }
+
+  .quick-q {
+    padding: 7px 20px 9px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .qq-btn {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .qq-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>EURNOK Regime Analyzer</h1>
+    <div class="subtitle">4-week win rate · Oil × S&P 500 regime matrix</div>
+  </div>
+  <div class="header-right">
+    <div class="contact-block">
+      <a href="mailto:advisor@algocapitaldao.com" class="contact-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+        </svg>
+        advisor@algocapitaldao.com
+      </a>
+      <a href="https://x.com/algocapitaldao" target="_blank" class="contact-link">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        @algocapitaldao
+      </a>
+    </div>
+    <div class="divider-v"></div>
+    <div class="header-meta">
+      4W rolling window<br>
+      <span style="color:var(--muted)">win = EURNOK up</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="left-panel">
+
+    <div class="section-label">Select current regime</div>
+    <div class="sliders-row">
+      <div class="slider-block">
+        <label>Crude Oil — 4W change</label>
+        <div class="slider-row">
+          <input type="range" id="oil" min="-10" max="10" step="2" value="0">
+          <span class="slider-val" id="oil-val">0%</span>
+        </div>
+      </div>
+      <div class="slider-block">
+        <label>S&P 500 — 4W change</label>
+        <div class="slider-row">
+          <input type="range" id="sp" min="-10" max="10" step="2" value="0">
+          <span class="slider-val" id="sp-val">0%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="signal-card neutral" id="sig-card">
+      <div class="sig-pct neutral" id="sig-pct">54%</div>
+      <div class="sig-info">
+        <div class="sig-title neutral" id="sig-title">Neutral</div>
+        <div class="sig-sub" id="sig-sub">Win rate (EURNOK up, 4W)</div>
+        <div class="sig-bar-wrap"><div class="sig-bar" id="sig-bar" style="width:54%;background:var(--neutral)"></div></div>
+      </div>
+    </div>
+
+    <div class="heatmap-section">
+      <div class="section-label">Regime matrix — click a cell to select</div>
+      <div class="axis-x-label">S&P 500 (4-week change)</div>
+      <div class="hmap-container">
+        <div class="y-axis-label">Crude Oil (4-week change)</div>
+        <div style="flex:1;overflow-x:auto">
+          <table class="hmap" id="heatmap"></table>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="leg-item"><div class="leg-dot" style="background:#3d8f6e"></div>Bullish EURNOK</div>
+        <div class="leg-item" style="margin-left:8px"><div class="leg-dot" style="background:#9f4040"></div>Bearish EURNOK</div>
+        <div class="leg-item" style="margin-left:8px"><div class="leg-dot" style="background:#5a6070"></div>Neutral</div>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted)">border = selected</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="right-panel">
+    <div class="insight-header">
+      <div class="section-label">Mechanism & Insight</div>
+    </div>
+    <div class="insight-body">
+
+      <div class="mechanism-block">
+        <h3>The core mechanism</h3>
+        <p>Higher oil should strengthen NOK — but currency markets are non-linear. When U.S. equities sell off, Norwegian sovereign wealth fund hedging of foreign equity holdings dominates. NOK selling by equity hedgers overwhelms the oil-positive story entirely.</p>
+      </div>
+
+      <div class="mechanism-block">
+        <h3>Why single-variable correlation fails</h3>
+        <p>Overlaying oil against EURNOK misses the interaction. The oil/EURNOK relationship is regime-dependent: bullish only when equities are stable or rising. Correlation grids are a starting point, not an answer.</p>
+      </div>
+
+      <div id="regime-dynamic-insight" class="regime-insight">
+        Select a regime above to see specific insight.
+      </div>
+
+    </div>
+
+    <div class="chat-section">
+      <div class="chat-label"><div class="ai-dot"></div>Ask the model</div>
+      <div class="quick-q" id="quick-q">
+        <button class="qq-btn" onclick="askQ('Why does EURNOK rise when equities fall?')">Why EURNOK rises on equity selloff?</button>
+        <button class="qq-btn" onclick="askQ('What drives NOK selling when S&P drops?')">NOK hedging mechanism?</button>
+        <button class="qq-btn" onclick="askQ('When is oil actually bullish for NOK?')">When is oil bullish for NOK?</button>
+        <button class="qq-btn" onclick="askQ('How should I trade the current regime?')">Trade the current regime</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ask about this regime or EURNOK dynamics...">
+        <button id="send-btn" onclick="sendChat()">Send ↗</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SP_COLS = [-10,-8,-6,-4,-2,2,4,6,8,10];
+const OIL_ROWS = [-10,-8,-6,-4,-2,2,4,6,8,10];
+
+const DATA = [
+  [93,93,82,83,79,52,44,36,33,20],
+  [93,94,84,83,78,55,49,44,50,33],
+  [94,94,85,85,73,63,47,44,47,50],
+  [94,94,84,83,73,57,50,41,40,25],
+  [89,89,82,79,72,54,43,36,36,22],
+  [80,86,84,66,58,30,22,12,0,0],
+  [100,100,88,63,55,24,17,6,0,0],
+  [100,100,83,64,53,19,14,6,0,0],
+  [100,100,82,68,53,20,14,9,0,0],
+  [100,100,82,68,53,20,14,9,0,0]
+];
+
+function cellColor(v) {
+  if (v >= 85) return { bg: '#1a3d2e', text: '#6fc49a' };
+  if (v >= 70) return { bg: '#1e3828', text: '#5ab888' };
+  if (v >= 58) return { bg: '#223322', text: '#7fbe8f' };
+  if (v >= 48) return { bg: '#252830', text: '#8899aa' };
+  if (v >= 38) return { bg: '#2d2020', text: '#c07070' };
+  if (v >= 20) return { bg: '#351616', text: '#d97070' };
+  return { bg: '#3d1010', text: '#e87070' };
+}
+
+function signalInfo(v) {
+  if (v >= 80) return { label: 'Strong LONG signal', cls: 'bull', bar: '#3d8f6e' };
+  if (v >= 65) return { label: 'LONG signal', cls: 'bull', bar: '#3d8f6e' };
+  if (v >= 55) return { label: 'Slight LONG bias', cls: 'bull', bar: '#3d8f6e' };
+  if (v >= 45) return { label: 'Neutral', cls: 'neutral', bar: '#5a6070' };
+  if (v >= 35) return { label: 'Slight SHORT bias', cls: 'bear', bar: '#9f4040' };
+  if (v >= 20) return { label: 'SHORT signal', cls: 'bear', bar: '#9f4040' };
+  return { label: 'Strong SHORT signal', cls: 'bear', bar: '#9f4040' };
+}
+
+function nearest(val, arr) {
+  return arr.reduce((a, b) => Math.abs(b - val) < Math.abs(a - val) ? b : a);
+}
+
+function fmtChange(v) { return (v > 0 ? '+' : '') + v + '%'; }
+
+function buildTable() {
+  const t = document.getElementById('heatmap');
+  let h = '<tr><th></th>';
+  SP_COLS.forEach(s => h += `<th>${fmtChange(s)}</th>`);
+  h += '</tr>';
+  OIL_ROWS.forEach((oil, ri) => {
+    h += `<tr><td class="rh">${fmtChange(oil)}</td>`;
+    SP_COLS.forEach((sp, ci) => {
+      const v = DATA[ri][ci];
+      const c = cellColor(v);
+      h += `<td class="cell" data-ri="${ri}" data-ci="${ci}" style="background:${c.bg};color:${c.text}" onclick="selectCell(${ri},${ci})">${v}%</td>`;
+    });
+    h += '</tr>';
+  });
+  t.innerHTML = h;
+}
+
+let curRi = 4, curCi = 4;
+
+function selectCell(ri, ci) {
+  curRi = ri; curCi = ci;
+  document.querySelectorAll('.cell').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.cell[data-ri="${ri}"][data-ci="${ci}"]`).classList.add('active');
+  const oil = OIL_ROWS[ri], sp = SP_COLS[ci];
+  document.getElementById('oil').value = oil;
+  document.getElementById('sp').value = sp;
+  renderSignal(ri, ci);
+}
+
+function renderSignal(ri, ci) {
+  const oil = OIL_ROWS[ri], sp = SP_COLS[ci];
+  const v = DATA[ri][ci];
+  const sig = signalInfo(v);
+
+  document.getElementById('oil-val').textContent = fmtChange(oil);
+  document.getElementById('sp-val').textContent = fmtChange(sp);
+  document.getElementById('sig-pct').textContent = v + '%';
+  document.getElementById('sig-pct').className = 'sig-pct ' + sig.cls;
+  document.getElementById('sig-title').textContent = sig.label;
+  document.getElementById('sig-title').className = 'sig-title ' + sig.cls;
+  document.getElementById('sig-card').className = 'signal-card ' + sig.cls;
+  document.getElementById('sig-bar').style.width = v + '%';
+  document.getElementById('sig-bar').style.background = sig.bar;
+
+  const insight = document.getElementById('regime-dynamic-insight');
+  insight.classList.add('visible');
+
+  let txt = '';
+  const oilDir = oil < 0 ? 'falling' : 'rising';
+  const spDir = sp < 0 ? 'selling off' : 'rallying';
+
+  if (sp <= -6 && oil >= 4) {
+    txt = `<strong>Classic hedge domination regime.</strong> Oil is ${oilDir} (${fmtChange(oil)}) which should help NOK, but equities are ${spDir} (${fmtChange(sp)}). Norwegian sovereign wealth fund hedging of foreign equity positions forces aggressive NOK selling. The oil-positive thesis is completely overwhelmed. Win rate ${v}% — EURNOK strongly bid.`;
+  } else if (sp >= 6 && oil >= 4) {
+    txt = `<strong>Risk-on + strong oil: NOK headwind.</strong> When equities rally hard and oil rises together, EURNOK historically falls sharply (win rate only ${v}%). Risk appetite is high, NOK is bought on oil, and no equity hedging pressure exists. This is the most bearish EURNOK regime.`;
+  } else if (sp <= -6 && oil <= -4) {
+    txt = `<strong>Double negative — but EURNOK still wins.</strong> Both oil and equities are down, yet EURNOK win rate is ${v}%. The equity hedging channel (NOK selling) still dominates the oil channel (also NOK negative). EUR acts as the relative safe haven in this configuration.`;
+  } else if (v >= 80) {
+    txt = `<strong>Bullish EURNOK regime (${v}%).</strong> Equity weakness (${fmtChange(sp)}) triggers Norwegian fund hedging flows — NOK selling pressure dominates. Oil at ${fmtChange(oil)} is secondary to the equity channel in this regime.`;
+  } else if (v <= 20) {
+    txt = `<strong>Bearish EURNOK regime (${v}%).</strong> Strong equity performance (${fmtChange(sp)}) removes hedging pressure on NOK. With oil ${oilDir} (${fmtChange(oil)}), NOK is supported on both fronts. EURNOK historically falls in ${100 - v}% of cases in this regime.`;
+  } else if (v >= 55) {
+    txt = `<strong>Moderate LONG bias (${v}%).</strong> Equities ${spDir} (${fmtChange(sp)}) with oil ${oilDir} (${fmtChange(oil)}). The equity hedging channel is active but not overwhelming. Monitor for deterioration in risk sentiment to confirm the setup.`;
+  } else if (v <= 45) {
+    txt = `<strong>Moderate SHORT bias (${v}%).</strong> Risk appetite (${fmtChange(sp)} S&P) limits NOK hedging demand. Oil ${oilDir} (${fmtChange(oil)}) provides partial NOK support. The interaction is mixed — wait for a cleaner regime.`;
+  } else {
+    txt = `<strong>Neutral zone (${v}%).</strong> The oil-equity interaction produces no strong directional edge in this regime. Single-variable correlation would mislead here — neither oil nor equity alone explains EURNOK direction.`;
+  }
+
+  insight.innerHTML = txt;
+}
+
+function update() {
+  const oilRaw = +document.getElementById('oil').value;
+  const spRaw  = +document.getElementById('sp').value;
+  const oil    = nearest(oilRaw, OIL_ROWS);
+  const sp     = nearest(spRaw,  SP_COLS);
+  const ri     = OIL_ROWS.indexOf(oil);
+  const ci     = SP_COLS.indexOf(sp);
+  curRi = ri; curCi = ci;
+  document.querySelectorAll('.cell').forEach(el => el.classList.remove('active'));
+  const activeCell = document.querySelector(`.cell[data-ri="${ri}"][data-ci="${ci}"]`);
+  if (activeCell) activeCell.classList.add('active');
+  renderSignal(ri, ci);
+}
+
+document.getElementById('oil').addEventListener('input', update);
+document.getElementById('sp').addEventListener('input', update);
+
+const SYSTEM_PROMPT = `You are a quantitative FX analyst specializing in EURNOK. You have deep expertise in the Norway sovereign wealth fund (GPFG) mechanics, oil markets, and FX hedging flows.
+
+Key facts you know:
+- EURNOK win rate matrix (4-week, win = EURNOK up):
+  Oil\\SPX: -10%  -8%  -6%  -4%  -2%  +2%  +4%  +6%  +8%  +10%
+  -10%:     93   93   82   83   79   52   44   36   33   20
+  -8%:      93   94   84   83   78   55   49   44   50   33
+  -6%:      94   94   85   85   73   63   47   44   47   50
+  -4%:      94   94   84   83   73   57   50   41   40   25
+  -2%:      89   89   82   79   72   54   43   36   36   22
+  +2%:      80   86   84   66   58   30   22   12    0    0
+  +4%:     100  100   88   63   55   24   17    6    0    0
+  +6%:     100  100   83   64   53   19   14    6    0    0
+  +8%:     100  100   82   68   53   20   14    9    0    0
+  +10%:    100  100   82   68   53   20   14    9    0    0
+
+- The dominant driver: when US equities sell off, Norway's GPFG hedges its massive foreign equity exposure by selling NOK. This dominates the oil-positive NOK story.
+- Higher oil is only truly bullish NOK when equities are stable or rising.
+- When SPX is up 6%+ AND oil is up 6%+, EURNOK is up only 0% of the time.
+- Single-variable correlation of oil vs EURNOK is misleading without the equity regime filter.
+
+Keep responses concise (3-5 sentences), precise, practitioner-oriented. No fluff.`;
+
+let messages = [];
+const currentOil = () => OIL_ROWS[curRi];
+const currentSP  = () => SP_COLS[curCi];
+const currentWR  = () => DATA[curRi][curCi];
+
+function askQ(q) {
+  document.getElementById('chat-input').value = q;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const btn   = document.getElementById('send-btn');
+  const q     = input.value.trim();
+  if (!q) return;
+
+  const context = `Current regime: Oil 4W = ${fmtChange(currentOil())}, SPX 4W = ${fmtChange(currentSP())}. Win rate = ${currentWR()}%.`;
+  const fullQ   = `${context}\n\nUser question: ${q}`;
+
+  input.value  = '';
+  btn.disabled = true;
+
+  addMsg('user', q);
+  const thinkId = addMsg('thinking', '...');
+  messages.push({ role: 'user', content: fullQ });
+
+  try {
+    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: messages
+      })
+    });
+    const data  = await res.json();
+    const reply = data.content?.map(b => b.text || '').join('') || 'Error: no response.';
+    messages.push({ role: 'assistant', content: reply });
+    removeMsg(thinkId);
+    addMsg('assistant', reply);
+  } catch (e) {
+    removeMsg(thinkId);
+    addMsg('assistant', 'Connection error. Check API access.');
+  }
+  btn.disabled = false;
+}
+
+let msgId = 0;
+function addMsg(type, text) {
+  const id  = 'msg-' + (msgId++);
+  const div = document.createElement('div');
+  div.className = 'msg ' + type;
+  div.id        = id;
+  div.textContent = text;
+  const c = document.getElementById('chat-messages');
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+  return id;
+}
+
+function removeMsg(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+buildTable();
+update();
+</script>
+</body>
+</html> 
